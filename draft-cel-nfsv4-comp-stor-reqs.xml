@@ -41,8 +41,9 @@ Network File System Requirements for Computational Storage
 
 <abstract>
 <t>
-This document introduces requirements for supporting
-Computational Storage on Network File System version 4 (NFS).
+This document introduces an architecture
+for supporting Computational Storage
+on Network File System version 4 (NFS) servers and clients.
 </t>
 </abstract>
 
@@ -54,7 +55,83 @@ Computational Storage on Network File System version 4 (NFS).
  title="Introduction"
  anchor="section:EE6A985D-D0FE-44EE-8BA0-77A61BE6D777">
 <t>
-Yada.
+Computational storage is more than providing compute offload.
+True computational storage conforms to one or both
+of the following criteria:
+<list style="symbols">
+<t>
+Compute resources close to where data is stored can leverage
+a high bandwidth link between storage and local compute.
+</t>
+<t>
+Compute co-located with storage can help reduce interrupt and
+data bandwidth needed between storage and host.
+</t>
+</list>
+For NFS, the focus of computational storage techniques would be
+on reducing network utilization between a server and its clients.
+NFSv4.2
+<xref target="RFC7862"/>
+already has examples of this approach:
+copy offload and file initialization.
+</t>
+<t>
+There are two broad types of computation offloaded to storage:
+<list style="hanging">
+<t hangText="Search:">
+Examples include SQL offload, or performing a "find" operation
+without pulling a filesystem's data to a client.
+</t>
+<t hangText="Filtering:">
+Also known as data transformation.
+Examples include compression, encryption, or integrity checking.
+</t>
+</list>
+</t>
+<t>
+The purpose of the current document is to provide a framework
+for discussing computational storage relative to the NFS protocol.
+</t>
+
+<section
+ title="Requirements Language"
+ anchor="section:46199ACD-34F1-4ACB-B246-E18A022CAED9">
+<t>
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+"SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY",
+and "OPTIONAL" in this document are to be interpreted
+as described in BCP 14
+<xref target="RFC2119"/>
+<xref target="RFC8174"/>
+when, and only when, they appear in all capitals, as shown here.
+</t>
+</section>
+
+</section>
+
+<section
+ title="Parameters"
+ anchor="section:2F82B858-25CD-4D9F-82A9-8D9D2C644190">
+<t>
+For various reasons,
+we do not want to require changes to the NFS protocol to expose
+computational resources.
+Instead, an NFS server host can expose alternate RPC programs
+which allow NFS clients access to the server's computational resources.
+The underlying assumption is that such computation runs faster on a
+host that can access files directly rather than via NFS.
+</t>
+<t>
+An important class of input and output parameters for these remote
+procedures are objects (e.g. files and directories) that exist in a
+filesystem that is shared via NFS.
+Such objects can be referenced by filehandle.
+Computation can also target byte ranges of files.
+</t>
+<t>
+Some kind of serialization would be needed to prevent an offload
+agent from colliding with access by NFS clients.
+A delegation might enable clients to see when the agent is active.
 </t>
 </section>
 
@@ -62,7 +139,13 @@ Yada.
  title="Security Considerations"
  anchor="section:2F987982-B9E8-4B76-8ACD-6EE148F5C185">
 <t>
-Yada.
+A trust relationship must exist between clients and servers.
+For example, how would clients be certain that the server has actually
+encrypted a file's content?
+</t>
+<t>
+There will need to be a mechanism for authorizing offload agents
+to access file data.
 </t>
 </section>
 
@@ -70,7 +153,7 @@ Yada.
  title="IANA Considerations"
  anchor="section:527B4122-B58E-4E40-BA88-663E4A8F8532">
 <t>
-This document requests no actions by IANA.
+This document requests no action from IANA.
 </t>
 </section>
 
@@ -80,14 +163,11 @@ This document requests no actions by IANA.
 
 <references title="Normative References">
 <?rfc include="reference.RFC.2119.xml"?>
-<?rfc include="reference.RFC.5661.xml"?>
 <?rfc include="reference.RFC.8174.xml"?>
 </references>
 
 <references title="Informative References">
-<?rfc include="reference.RFC.2104.xml"?>
-<?rfc include="reference.RFC.5662.xml"?>
-<?rfc include="reference.RFC.7861.xml"?>
+<?rfc include="reference.RFC.7862.xml"?>
 </references>
 
 <section
@@ -96,7 +176,7 @@ This document requests no actions by IANA.
  numbered="no">
 <t>
 Special thanks go to
-Transport Area Director Spencer Dawkins,
+Transport Area Director Magnus Westerlund,
 NFSV4 Working Group Chairs Spencer Shepler and Brian Pawlowski,
 and
 NFSV4 Working Group Secretary Thomas Haynes
