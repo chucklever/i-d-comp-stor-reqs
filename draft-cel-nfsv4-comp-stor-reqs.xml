@@ -60,20 +60,21 @@ True computational storage conforms to one or both
 of the following criteria:
 <list style="symbols">
 <t>
-Compute resources close to where data is stored can leverage
+Compute resources co-located with data storage leverages
 a high bandwidth link between storage and local compute.
 </t>
 <t>
-Compute co-located with storage can help reduce interrupt and
-data bandwidth needed between storage and host.
+Compute resources co-located with data storage reduces
+interrupt or data bandwidth needed between storage and host.
 </t>
 </list>
-For NFS, the focus of computational storage techniques would be
+For NFS, the focus of computational storage techniques is
 on reducing network utilization between a server and its clients.
 NFSv4.2
 <xref target="RFC7862"/>
-already has examples of this approach:
-copy offload and file initialization.
+already applies this approach:
+new features include
+copy offload and file initialization (ALLOCATE).
 </t>
 <t>
 There are two broad types of computation offloaded to storage:
@@ -84,13 +85,13 @@ without pulling a filesystem's data to a client.
 </t>
 <t hangText="Filtering:">
 Also known as data transformation.
-Examples include compression, encryption, or integrity checking.
+Examples include compression, transcoding, encryption, or integrity checking.
 </t>
 </list>
 </t>
 <t>
 The purpose of the current document is to provide a framework
-for discussing computational storage relative to the NFS protocol.
+for reasoning about computational storage relative to the NFS protocol.
 </t>
 
 <section
@@ -116,22 +117,22 @@ when, and only when, they appear in all capitals, as shown here.
 For various reasons,
 we do not want to require changes to the NFS protocol to expose
 computational resources.
-Instead, an NFS server host can expose alternate RPC programs
-which allow NFS clients access to the server's computational resources.
+Instead, an NFS server host can advertise alternate RPC programs
+which allow NFS clients access to the server's computational services
+in a structured fashion.
 The underlying assumption is that such computation runs faster on a
-host that can access files directly rather than via NFS.
+host that can access file data directly rather than via NFS.
 </t>
 <t>
 An important class of input and output parameters for these remote
 procedures are objects (e.g. files and directories) that exist in a
 filesystem that is shared via NFS.
-Such objects can be referenced by filehandle.
-Computation can also target byte ranges of files.
+Such objects are referenced by filehandle and optionally a range of bytes.
 </t>
 <t>
-Some kind of serialization would be needed to prevent an offload
-agent from colliding with access by NFS clients.
-A delegation might enable clients to see when the agent is active.
+Serialization is necessary to prevent an offload agent from colliding
+with access by NFS clients.
+Open state or a delegation might be appropriate for this purpose.
 </t>
 </section>
 
