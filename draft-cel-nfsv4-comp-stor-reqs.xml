@@ -2,12 +2,12 @@
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd" [ ]>
 <?xml-stylesheet type="text/xsl" href="rfc2629.xslt" ?>
 
-<?rfc strict="true" ?>
-<?rfc toc="true"?>
-<?rfc symrefs="true"?>
-<?rfc sortrefs="true" ?>
-<?rfc compact="true" ?>
-<?rfc subcompact="false" ?>
+<?rfc strict="yes" ?>
+<?rfc toc="yes"?>
+<?rfc symrefs="yes"?>
+<?rfc sortrefs="yes" ?>
+<?rfc compact="yes" ?>
+<?rfc subcompact="no" ?>
 
 <rfc
  docName="draft-cel-nfsv4-comp-stor-reqs-latest"
@@ -68,16 +68,9 @@ Compute resources co-located with data storage reduces
 interrupt or data bandwidth needed between storage and host.
 </t>
 </list>
-For NFS, the focus of computational storage techniques is
-on reducing network utilization between a server and its clients.
-NFSv4.2
-<xref target="RFC7862"/>
-already applies this approach:
-new features include
-copy offload and file initialization (ALLOCATE).
 </t>
 <t>
-There are two broad types of computation offloaded to storage:
+There are two broad categories of computation offloaded to storage:
 <list style="hanging">
 <t hangText="Search:">
 Examples include SQL offload, or performing a "find" operation
@@ -85,9 +78,25 @@ without pulling a filesystem's data to a client.
 </t>
 <t hangText="Filtering:">
 Also known as data transformation.
-Examples include compression, transcoding, encryption, or integrity checking.
+Examples include
+compression,
+transcoding,
+encryption,
+and
+integrity checking.
 </t>
 </list>
+</t>
+<t>
+For NFS, the main purpose of computational storage techniques is
+reducing network utilization between a server and its clients.
+NFSv4.2
+<xref target="RFC7862"/>
+already applies this approach --
+features new to NFSv4.2 include
+copy offload and file initialization (ALLOCATE),
+both of which are intended to prevent extra data round-trips
+between clients and server.
 </t>
 <t>
 The purpose of the current document is to provide a framework
@@ -124,15 +133,34 @@ The underlying assumption is that such computation runs faster on a
 host that can access file data directly rather than via NFS.
 </t>
 <t>
+We expect that computational storage applications are
+outside the realm of POSIX,
+and therefore would be triggered directly by user space programs
+rather than exclusively through a POSIX-based NFS client.
+This is one reason that a side-channel approach is preferred,
+rather than extending the NFS protocol itself.
+</t>
+<t>
 An important class of input and output parameters for these remote
 procedures are objects (e.g. files and directories) that exist in a
 filesystem that is shared via NFS.
 Such objects are referenced by filehandle and optionally a range of bytes.
 </t>
 <t>
-Serialization is necessary to prevent an offload agent from colliding
-with access by NFS clients.
-Open state or a delegation might be appropriate for this purpose.
+Serialization is often necessary to prevent an offload agent
+from colliding with access by standard NFS clients.
+Open state or a delegation might be necessary for this purpose.
+</t>
+<t>
+As an example, suppose an RPC program is constructed to enable
+the encryption and decryption of files on an NFS server.
+The arguments to the encryption and decryption verbs might
+include an input filehandle, an output filehandle (or an
+indication that the transform should occur in place),
+the selection of a cipher algorithm, and a key.
+The result would be an indication of success or failure.
+No data is transferred between the requesting client and
+the server where the input and output files reside.
 </t>
 </section>
 
@@ -175,6 +203,14 @@ This document requests no action from IANA.
  title="Acknowledgments"
  anchor="section:F3D386B1-76E1-43E4-A0C5-956D769E21DB"
  numbered="no">
+<t>
+The author is grateful to
+Bill Baker,
+Greg Marsden,
+and
+Jim Williams
+for their input and support of this work.
+</t>
 <t>
 Special thanks go to
 Transport Area Director Magnus Westerlund,
