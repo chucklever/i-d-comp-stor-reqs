@@ -4,8 +4,8 @@
 
 Network File System Version 4                                   C. Lever
 Internet-Draft                                                    Oracle
-Intended status: Informational                            March 23, 2019
-Expires: September 24, 2019
+Intended status: Informational                             April 4, 2019
+Expires: October 6, 2019
 
 
        Network File System Requirements for Computational Storage
@@ -31,7 +31,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on September 24, 2019.
+   This Internet-Draft will expire on October 6, 2019.
 
 Copyright Notice
 
@@ -53,10 +53,23 @@ Copyright Notice
 
 
 
-Lever                  Expires September 24, 2019               [Page 1]
+Lever                    Expires October 6, 2019                [Page 1]
 
-Internet-Draft        Computational Storage for NFS           March 2019
+Internet-Draft        Computational Storage for NFS           April 2019
 
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
+     1.1.  Requirements Language . . . . . . . . . . . . . . . . . .   2
+   2.  Parameters  . . . . . . . . . . . . . . . . . . . . . . . . .   3
+   3.  Security Considerations . . . . . . . . . . . . . . . . . . .   3
+   4.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   4
+   5.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   4
+     5.1.  Normative References  . . . . . . . . . . . . . . . . . .   4
+     5.2.  Informative References  . . . . . . . . . . . . . . . . .   4
+   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .   4
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .   4
 
 1.  Introduction
 
@@ -70,18 +83,20 @@ Internet-Draft        Computational Storage for NFS           March 2019
    o  Compute resources co-located with data storage reduces interrupt
       or data bandwidth needed between storage and host.
 
-   For NFS, the focus of computational storage techniques is on reducing
-   network utilization between a server and its clients.  NFSv4.2 [3]
-   already applies this approach: new features include copy offload and
-   file initialization (ALLOCATE).
-
-   There are two broad types of computation offloaded to storage:
+   There are two broad categories of computation offloaded to storage:
 
    Search:  Examples include SQL offload, or performing a "find"
       operation without pulling a filesystem's data to a client.
 
    Filtering:  Also known as data transformation.  Examples include
-      compression, transcoding, encryption, or integrity checking.
+      compression, transcoding, encryption, and integrity checking.
+
+   For NFS, the main purpose of computational storage techniques is
+   reducing network utilization between a server and its clients.
+   NFSv4.2 [RFC7862] already applies this approach -- features new to
+   NFSv4.2 include copy offload and file initialization (ALLOCATE), both
+   of which are intended to prevent extra data round-trips between
+   clients and server.
 
    The purpose of the current document is to provide a framework for
    reasoning about computational storage relative to the NFS protocol.
@@ -91,8 +106,16 @@ Internet-Draft        Computational Storage for NFS           March 2019
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
    "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
    "OPTIONAL" in this document are to be interpreted as described in BCP
-   14 [1] [2] when, and only when, they appear in all capitals, as shown
-   here.
+
+
+
+Lever                    Expires October 6, 2019                [Page 2]
+
+Internet-Draft        Computational Storage for NFS           April 2019
+
+
+   14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
 
 2.  Parameters
 
@@ -104,22 +127,29 @@ Internet-Draft        Computational Storage for NFS           March 2019
    faster on a host that can access file data directly rather than via
    NFS.
 
+   We expect that computational storage applications are outside the
+   realm of POSIX, and therefore would be triggered directly by user
+   space programs rather than exclusively through a POSIX-based NFS
+   client.  This is one reason that a side-channel approach is
+   preferred, rather than extending the NFS protocol itself.
+
    An important class of input and output parameters for these remote
    procedures are objects (e.g. files and directories) that exist in a
-
-
-
-Lever                  Expires September 24, 2019               [Page 2]
-
-Internet-Draft        Computational Storage for NFS           March 2019
-
-
    filesystem that is shared via NFS.  Such objects are referenced by
    filehandle and optionally a range of bytes.
 
-   Serialization is necessary to prevent an offload agent from colliding
-   with access by NFS clients.  Open state or a delegation might be
-   appropriate for this purpose.
+   Serialization is often necessary to prevent an offload agent from
+   colliding with access by standard NFS clients.  Open state or a
+   delegation might be necessary for this purpose.
+
+   As an example, suppose an RPC program is constructed to enable the
+   encryption and decryption of files on an NFS server.  The arguments
+   to the encryption and decryption verbs might include an input
+   filehandle, an output filehandle (or an indication that the transform
+   should occur in place), the selection of a cipher algorithm, and a
+   key.  The result would be an indication of success or failure.  No
+   data is transferred between the requesting client and the server
+   where the input and output files reside.
 
 3.  Security Considerations
 
@@ -130,6 +160,16 @@ Internet-Draft        Computational Storage for NFS           March 2019
    There will need to be a mechanism for authorizing offload agents to
    access file data.
 
+
+
+
+
+
+Lever                    Expires October 6, 2019                [Page 3]
+
+Internet-Draft        Computational Storage for NFS           April 2019
+
+
 4.  IANA Considerations
 
    This document requests no action from IANA.
@@ -138,37 +178,29 @@ Internet-Draft        Computational Storage for NFS           March 2019
 
 5.1.  Normative References
 
-   [1]        Bradner, S., "Key words for use in RFCs to Indicate
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
               DOI 10.17487/RFC2119, March 1997,
               <https://www.rfc-editor.org/info/rfc2119>.
 
-   [2]        Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
               2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
               May 2017, <https://www.rfc-editor.org/info/rfc8174>.
 
 5.2.  Informative References
 
-   [3]        Haynes, T., "Network File System (NFS) Version 4 Minor
+   [RFC7862]  Haynes, T., "Network File System (NFS) Version 4 Minor
               Version 2 Protocol", RFC 7862, DOI 10.17487/RFC7862,
               November 2016, <https://www.rfc-editor.org/info/rfc7862>.
 
 Acknowledgments
 
+   The author is grateful to Bill Baker, Greg Marsden, and Jim Williams
+   for their input and support of this work.
+
    Special thanks go to Transport Area Director Magnus Westerlund, NFSV4
    Working Group Chairs Spencer Shepler and Brian Pawlowski, and NFSV4
    Working Group Secretary Thomas Haynes for their support.
-
-
-
-
-
-
-
-Lever                  Expires September 24, 2019               [Page 3]
-
-Internet-Draft        Computational Storage for NFS           March 2019
-
 
 Author's Address
 
@@ -189,36 +221,4 @@ Author's Address
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Lever                  Expires September 24, 2019               [Page 4]
+Lever                    Expires October 6, 2019                [Page 4]
