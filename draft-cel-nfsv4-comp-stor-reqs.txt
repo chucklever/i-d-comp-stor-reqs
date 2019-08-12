@@ -4,8 +4,8 @@
 
 Network File System Version 4                                   C. Lever
 Internet-Draft                                                    Oracle
-Intended status: Informational                            April 24, 2019
-Expires: October 26, 2019
+Intended status: Informational                           August 12, 2019
+Expires: February 13, 2020
 
 
   Network File System Version 4 Requirements for Computational Storage
@@ -31,7 +31,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on October 26, 2019.
+   This Internet-Draft will expire on February 13, 2020.
 
 Copyright Notice
 
@@ -53,33 +53,35 @@ Copyright Notice
 
 
 
-Lever                   Expires October 26, 2019                [Page 1]
+Lever                   Expires February 13, 2020               [Page 1]
 
-Internet-Draft        Computational Storage for NFS           April 2019
+Internet-Draft        Computational Storage for NFS          August 2019
 
 
 Table of Contents
 
    1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
    2.  Requirements Language . . . . . . . . . . . . . . . . . . . .   3
-   3.  Parameters  . . . . . . . . . . . . . . . . . . . . . . . . .   3
-   4.  Security Considerations . . . . . . . . . . . . . . . . . . .   4
-   5.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   4
-   6.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   4
-     6.1.  Normative References  . . . . . . . . . . . . . . . . . .   4
-     6.2.  Informative References  . . . . . . . . . . . . . . . . .   4
-   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .   4
-   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .   5
+   3.  Service Discovery . . . . . . . . . . . . . . . . . . . . . .   3
+   4.  Service Configuration . . . . . . . . . . . . . . . . . . . .   3
+   5.  Service Operation . . . . . . . . . . . . . . . . . . . . . .   4
+   6.  Security Considerations . . . . . . . . . . . . . . . . . . .   4
+   7.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   5
+   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   5
+     8.1.  Normative References  . . . . . . . . . . . . . . . . . .   5
+     8.2.  Informative References  . . . . . . . . . . . . . . . . .   5
+   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .   5
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .   6
 
 1.  Introduction
 
    True computational storage conforms to one or both of the following
    criteria:
 
-   o  Compute resources co-located with data storage leverages a high
-      bandwidth link between storage and local compute.
+   o  A compute resource co-located with data storage leverages a high
+      bandwidth link between that compute resource and storage.
 
-   o  Compute resources co-located with data storage reduces interrupt
+   o  A compute resource co-located with data storage reduces interrupt
       or data bandwidth needed between storage and host.
 
    There are several broad use cases for computation offloaded to
@@ -89,34 +91,40 @@ Table of Contents
       engine co-located with its dataset, or performing a "find"
       operation without pulling an entire filesystem's data to a client.
 
-   Filtering:  Also known as data transformation.  Examples include
-      compression, transcoding, and encryption.
+   Data Transformation:  Examples include compression, transcoding, and
+      encryption.
 
    Data Management:  This might be a control plane that permits
       administrative actions such as instantiating a transfer to cold
       storage, integrity measurement (scrubbing), or creating a snapshot
       of a particular file.
 
-   For NFS, the mission of computational storage techniques is to reduce
-   network utilization between an NFS server and its clients.  NFSv4.2
-   [RFC7862] already applies this approach -- features new to NFSv4.2
-   include copy offload and file initialization (ALLOCATE), both of
-   which are intended to prevent extra data round-trips between clients
-   and server.
+   In some cases, computational storage is a computational service that
+   is available as a direct offload for a host CPU.  The source and sink
+   data both reside in the host's memory.  For NFS, however, the mission
+   of computational storage techniques is to reduce network utilization
+   between an NFS server and its clients.  Here, the source and sink are
+   typically located in files on NFS servers; the operation of the
 
 
 
 
-
-
-Lever                   Expires October 26, 2019                [Page 2]
+Lever                   Expires February 13, 2020               [Page 2]
 
-Internet-Draft        Computational Storage for NFS           April 2019
+Internet-Draft        Computational Storage for NFS          August 2019
 
+
+   computational service is often transparent to applications running on
+   NFS clients.
+
+   NFSv4.2 [RFC7862] already applies this approach -- features new to
+   NFSv4.2 include copy offload and file initialization (ALLOCATE), both
+   of which are intended to prevent extra data round-trips between
+   clients and server.
 
    The purpose of the current document is to provide a framework for
    discussing and reasoning about computational storage relative to the
-   NFS protocol.
+   NFS protocol and typical NFS deployments.
 
 2.  Requirements Language
 
@@ -126,75 +134,118 @@ Internet-Draft        Computational Storage for NFS           April 2019
    14 [RFC2119] [RFC8174] when, and only when, they appear in all
    capitals, as shown here.
 
-3.  Parameters
+3.  Service Discovery
 
    For various reasons, we do not want to require changes to the NFS
-   protocol to expose computational resources.  Instead, an NFS server
-   host can advertise alternate RPC programs which allow NFS clients
-   access to the server's computational services in a structured
-   fashion.  The underlying assumption is that such computation runs
-   faster on a host that can access file data directly rather than via
-   NFS.
+   protocol to expose computational storage resources.  Instead, an NFS
+   server host can advertise RPC programs which allow NFS clients to
+   configure the server's computational services, and the services then
+   operate on data in files stored there.  CSS configuration programs
+   can be advertised via the rpcbind service [RFC1833].
 
-   We expect that computational storage applications are outside the
-   realm of POSIX, and therefore would be triggered directly by user
-   space programs rather than exclusively through a POSIX-based NFS
-   client.  This is one reason that a side-channel approach is
-   preferred, rather than extending the NFS protocol itself.
+   Typically a CSS configuration facility would register with the NFS
+   server's rpcbind service, advertising its listening port and RPC
+   program number.  Administrative clients would then contact this
+   service to configure it for use.
 
-   An important class of input and output parameters for these remote
-   procedures are objects (e.g. files and directories) that exist in a
+4.  Service Configuration
+
+   A configuration program exposes the parameters of an individual CSS.
+   Such configuration might include the selection of encryption
+   algorithms or keys, or the specification of regular expressions or
+   prepared SQL statements.  The location of the input dataset or
+   results of a CSS might also be specified.
+
+   An important class of input and output parameters for configuration
+   programs are objects (e.g. files and directories) that exist in a
    filesystem that is shared via NFS.  When they are local, such objects
    can be referenced by filehandle and optionally a range of bytes.  To
    reference a remote object, either an NFS URI (defined in
+
+
+
+
+Lever                   Expires February 13, 2020               [Page 3]
+
+Internet-Draft        Computational Storage for NFS          August 2019
+
+
    Section 2.8.1 of [RFC7532]) or a tuple consisting of a network
    address and a filehandle may be used.
 
+5.  Service Operation
+
+   There are two possible modes of operation:
+
+   Transparent:  After the computational service is configured, its
+      operation occurs behind NFS READ and WRITE operations, and is not
+      directly visible to NFS clients.  Examples of this mode include
+      data reduction (e.g., deduplication) and encryption-at-rest.
+
+   Verbal:  Clients would use a separate (RPC) protocol to initiate
+      requests or capture results, when the results are expected to be
+      small, or are not appropriate for storing into a file.  An example
+      of this mode is invoking search operations over large datasets
+      where the results might a small set of filehandles with byte
+      ranges.
+
    Serialization is often necessary to prevent an offload agent from
-   colliding with access by standard NFS clients.  Open state or a
-   delegation might be necessary for this purpose.
+   colliding with accesses by standard NFS clients.  Open state or a
+   delegation might be necessary for this purpose.  Alternatively, no
+   locking would be provided via NFS, and the applications themselves
+   would be responsible for seeing that the integrity of the input
+   datasets is maintained during offloaded operations.
 
-   As an example, suppose an RPC program is constructed to enable the
-   encryption and decryption of files on an NFS server.  The arguments
-   to the encryption and decryption verbs might include an input
-   filehandle, an output filehandle (or an indication that the transform
-   should occur in place), the selection of a cipher algorithm, and a
-   key.  The result would be an indication of success or failure.  No
-   data is transferred between the requesting client and the server
-   where the input and output files reside.
-
-
-
-Lever                   Expires October 26, 2019                [Page 3]
-
-Internet-Draft        Computational Storage for NFS           April 2019
-
-
-4.  Security Considerations
+6.  Security Considerations
 
    Unlike most block storage, NFS is typically deployed on open networks
    rather than environments with limited access (such as a PCIe bus).
-   More attention must be focused on security.  In particular:
+   In such open environments, extra attention must be focused on
+   security.  In particular:
+
+   o  Remote access to configuration programs and computational results
+      will need to be authenticated and authorized in some fashion.  The
+      ONC RPC protocol itself [RFC5531] has authentication mechanisms,
+      including mechanisms that use strong cryptography [RFC7861].
+
+   o  There will need to be a mechanism for authorizing offload agents
+      to access file data on behalf of authenticated users.
 
    o  A trust relationship must exist between clients and servers.  For
       example, how would clients be certain that the server has actually
       encrypted a file's content?
 
-   o  There will need to be a mechanism for authorizing offload agents
-      to access file data on behalf of authenticated users.
 
-5.  IANA Considerations
+
+
+
+
+
+Lever                   Expires February 13, 2020               [Page 4]
+
+Internet-Draft        Computational Storage for NFS          August 2019
+
+
+7.  IANA Considerations
 
    This document has no IANA actions.
 
-6.  References
+8.  References
 
-6.1.  Normative References
+8.1.  Normative References
+
+   [RFC1833]  Srinivasan, R., "Binding Protocols for ONC RPC Version 2",
+              RFC 1833, DOI 10.17487/RFC1833, August 1995,
+              <https://www.rfc-editor.org/info/rfc1833>.
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
               DOI 10.17487/RFC2119, March 1997,
               <https://www.rfc-editor.org/info/rfc2119>.
+
+   [RFC5531]  Thurlow, R., "RPC: Remote Procedure Call Protocol
+              Specification Version 2", RFC 5531, DOI 10.17487/RFC5531,
+              May 2009, <https://www.rfc-editor.org/info/rfc5531>.
 
    [RFC7532]  Lentini, J., Tewari, R., and C. Lever, Ed., "Namespace
               Database (NSDB) Protocol for Federated File Systems",
@@ -205,7 +256,11 @@ Internet-Draft        Computational Storage for NFS           April 2019
               2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
               May 2017, <https://www.rfc-editor.org/info/rfc8174>.
 
-6.2.  Informative References
+8.2.  Informative References
+
+   [RFC7861]  Adamson, A. and N. Williams, "Remote Procedure Call (RPC)
+              Security Version 3", RFC 7861, DOI 10.17487/RFC7861,
+              November 2016, <https://www.rfc-editor.org/info/rfc7861>.
 
    [RFC7862]  Haynes, T., "Network File System (NFS) Version 4 Minor
               Version 2 Protocol", RFC 7862, DOI 10.17487/RFC7862,
@@ -214,16 +269,17 @@ Internet-Draft        Computational Storage for NFS           April 2019
 Acknowledgments
 
    The author is grateful to Bill Baker, Greg Marsden, and Jim Williams
-   for their input and support of this work.
+   of Oracle, and Glenn Watkins of HPE for their input and support of
+   this work.
 
 
 
 
 
 
-Lever                   Expires October 26, 2019                [Page 4]
+Lever                   Expires February 13, 2020               [Page 5]
 
-Internet-Draft        Computational Storage for NFS           April 2019
+Internet-Draft        Computational Storage for NFS          August 2019
 
 
    Special thanks go to Transport Area Director Magnus Westerlund, NFSV4
@@ -277,4 +333,4 @@ Author's Address
 
 
 
-Lever                   Expires October 26, 2019                [Page 5]
+Lever                   Expires February 13, 2020               [Page 6]
