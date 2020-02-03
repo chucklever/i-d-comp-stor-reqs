@@ -41,9 +41,9 @@ Network File System Version 4 Requirements for Computational Storage
 
 <abstract>
 <t>
-This document introduces an architecture
-for supporting Computational Storage
-on Network File System version 4 (NFS) servers and clients.
+This document proposes an architecture
+to support Computational Storage
+using Network File System version 4 (NFS) files.
 </t>
 </abstract>
 
@@ -52,24 +52,22 @@ on Network File System version 4 (NFS) servers and clients.
 <middle>
 
 <section
- title="Introduction"
- anchor="section:EE6A985D-D0FE-44EE-8BA0-77A61BE6D777">
+ anchor="section:ee6a985d-d0fe-44ee-8ba0-77a61be6d777"
+ title="Introduction">
 <t>
-True computational storage conforms to one or both
-of the following criteria:
-<list style="symbols">
-<t>
-A compute resource co-located with data storage leverages
-a high bandwidth link between that compute resource and storage.
+In traditional computing architectures, stored data is dormant.
+Computational storage brings computing power closer to data storage
+to leverage a high-bandwidth link between the compute resource and data-at-rest,
+or
+to reduce interrupt or data bandwidth needed between storage and host.
+Reducing the movement of large data objects
+lowers power consumption
+and
+increases opportunities for parallelism.
 </t>
 <t>
-A compute resource co-located with data storage reduces
-interrupt or data bandwidth needed between storage and host.
-</t>
-</list>
-</t>
-<t>
-There are several broad use cases for computation offloaded to storage:
+There are already several pervasive usage scenarios
+suited to computation offloaded to storage:
 <list style="hanging">
 <t hangText="Search:">
 Examples include
@@ -94,16 +92,14 @@ or
 creating a snapshot of a particular file.
 </t>
 </list>
-</t>
-<t>
-In some cases, computational storage is a computational service that is
-available as a direct offload for a host CPU.
+In some cases, computational storage is a computational service
+that is available as a direct offload for a host CPU.
 The source and sink data both reside in the host's memory.
-For NFS, however, the mission of computational storage techniques is
-to reduce network utilization between an NFS server and its clients.
-Here, the source and sink are typically located in files on NFS servers;
-the operation of the computational service is often transparent
-to applications running on NFS clients.
+For NFS, however, the mission of computational storage techniques
+is to reduce network utilization between an NFS server and its clients.
+Here, the source and sink are files on NFS servers.
+The operation of the computational service
+can be entirely invisible to applications running on NFS clients.
 </t>
 <t>
 NFSv4.2
@@ -115,6 +111,10 @@ both of which are intended to prevent extra data round-trips
 between clients and server.
 </t>
 <t>
+Computational storage is an emerging technology
+already offered by several companies, including Samsung and HPE.
+A suitable introduction appears in
+<xref target="TORA"/>.
 The purpose of the current document is to provide a framework
 for discussing and reasoning about computational storage
 relative to the NFS protocol and typical NFS deployments.
@@ -122,123 +122,158 @@ relative to the NFS protocol and typical NFS deployments.
 </section>
 
 <section
- title="Requirements Language"
- anchor="section:46199ACD-34F1-4ACB-B246-E18A022CAED9">
-<t>
-The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
-"SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY",
-and "OPTIONAL" in this document are to be interpreted
-as described in BCP 14
-<xref target="RFC2119"/>
-<xref target="RFC8174"/>
-when, and only when, they appear in all capitals, as shown here.
-</t>
-</section>
-
-<section
- title="Service Discovery"
- anchor="section:44C8EB81-6AAE-4A33-943C-575082EF08FC">
+ anchor="section:101ff943-3f14-4c73-a3c4-c762fb28fc1d"
+ title="Computational Storage in Operation">
 <t>
 For various reasons,
 we do not want to require changes to the NFS protocol to expose
 computational storage resources.
 Instead, an NFS server host can advertise RPC programs
-which allow NFS clients to configure the server's computational services,
-and the services then operate on data in files stored there.
-CSS configuration programs can be advertised via the rpcbind service
-<xref target="RFC1833"/>.
+that allow NFS clients to recognize and configure
+the NFS server's computational services.
+The services operate on data stored on that server.
 </t>
 <t>
-Typically a CSS configuration facility would register with the NFS server's
-rpcbind service, advertising its listening port and RPC program number.
-Administrative clients would then contact this service to configure it
-for use.
+We begin by defining the term
+Computational Storage Service (CSS)
+to mean
+a network service that performs computation on data
+where the service and the data it operates upon
+are tightly associated with a storage target.
+</t>
+
+<section
+ anchor="section:44c8eb81-6aae-4a33-943c-575082ef08fc"
+ title="Service Discovery">
+<t>
+Typically a CSS configuration facility registers with
+the NFS server's rpcbind service
+<xref target="RFC1833"/>
+to advertise its listening port and RPC program number.
+Administrative clients or users then contact this service
+to configure it for use.
+</t>
+<t>
+A CSS that has no administrative interface must also
+advertise its presence on the NFS server via this mechanism.
 </t>
 </section>
 
 <section
- title="Service Configuration"
- anchor="section:D0C221F2-43CE-43D7-A66E-C6AF3222274D">
+ anchor="section:d0c221f2-43ce-43d7-a66e-c6af3222274d"
+ title="Service Configuration">
 <t>
-A configuration program exposes the parameters of an individual CSS.
-Such configuration might include the selection of encryption algorithms or keys,
-or the specification of regular expressions or prepared SQL statements.
-The location of the input dataset or results of a CSS might also be specified.
+Computational Storage Services have varying degrees of configurability.
+A so-called Fixed Computational Storage Service
+provides one or a few specific pre-determined functions (e.g., encryption).
 </t>
 <t>
-An important class of input and output parameters for configuration
-programs are objects (e.g. files and directories) that exist in a
-filesystem that is shared via NFS.
-When they are local, such objects can be referenced by filehandle
-and optionally a range of bytes.
-To reference a remote object,
-either an NFS URI
-(defined in Section 2.8.1 of
+A Programmable Computational Storage Service
+is a more general-purpose service
+that must be provided with a program before the CSS becomes usable
+(e.g., an operating system image or an FPGA bit file).
+</t>
+<t>
+A configuration program exposes the parameters of a specific CSS via RPC.
+Such configuration might include
+the selection of encryption algorithms or keys,
+or
+the specification of regular expressions or prepared SQL statements.
+The input dataset or a destination for results might also be specified.
+</t>
+<t>
+The primary class of input and output parameters
+for configuration programs are objects
+(e.g., files and directories)
+that exist in a filesystem shared via NFS.
+When they are local, a CSS can reference such objects
+by filehandle and optionally a range of bytes.
+A CSS references a remote object using either
+an NFS URI (defined in Section 2.8.1 of
 <xref target="RFC7532"/>)
 or
-a tuple consisting of a network address and a filehandle may be used.
+a tuple consisting of a network address and a filehandle.
 </t>
 </section>
 
 <section
- title="Service Operation"
- anchor="section:4AA2B988-B5E6-453E-B99E-39D94488A420">
+ anchor="section:4aa2b988-b5e6-453e-b99e-39d94488a420"
+ title="Service Operation">
 <t>
-There are two possible modes of operation:
+There are two alternative modes of operation:
 <list style="hanging">
 <t hangText="Transparent:">
-After the computational service is configured, its operation occurs
-behind NFS READ and WRITE operations, and is not directly visible to
-NFS clients.
-Examples of this mode include data reduction (e.g., deduplication)
-and
-encryption-at-rest.
+Once configured, a CSS's operation occurs
+behind NFS READ and WRITE operations,
+and is not directly visible to NFS clients.
+For instance, an NFS server might perform
+data reduction (e.g., deduplication)
+or
+encryption-at-rest
+without exposing these transformations to clients.
 </t>
 <t hangText="Verbal:">
-Clients would use a separate (RPC) protocol to initiate requests or
-capture results, when the results are expected to be small, or are
-not appropriate for storing into a file.
-An example of this mode is invoking search operations over large datasets
-where the results might a small set of filehandles with byte ranges.
+Clients use a separate RPC protocol to
+initiate requests
+or
+capture results
+when the results are expected to be small
+or
+are not appropriate for storing into a file.
+This mode of operation is useful for
+invoking search operations over large datasets
+where the results might be
+a small set of filehandles with byte ranges.
 </t>
 </list>
 </t>
 <t>
-Serialization is often necessary to prevent an offload agent
-from colliding with accesses by standard NFS clients.
-Open state or a delegation might be necessary for this purpose.
-Alternatively, no locking would be provided via NFS, and the
-applications themselves would be responsible for seeing that
-the integrity of the input datasets is maintained during offloaded
-operations.
+Serialization might be necessary to prevent
+an offload agent from colliding with accesses by standard NFS clients.
+A client might open the input file or hold a delegation for this purpose.
+</t>
+<t>
+Alternatively, the NFS protocol might provide no serialization.
+Applications themselves would be responsible for
+maintaining the integrity of the input datasets during offloaded operations.
 </t>
 </section>
 
+</section>
+
 <section
- title="Security Considerations"
- anchor="section:2F987982-B9E8-4B76-8ACD-6EE148F5C185">
+ anchor="section:2f987982-b9e8-4b76-8acd-6ee148f5c185"
+ title="Security Considerations">
 <t>
-Unlike most block storage, NFS is typically deployed on open networks
-rather than environments with limited access (such as a PCIe bus).
-In such open environments, extra attention must be focused on security.
+NFS storage is typically deployed on open networks
+rather than
+in environments with restricted access,
+such as a PCIe bus or a dedicated storage fabric.
+In such open environments,
+administrators must focus extra attention on security.
 In particular:
 <list style="symbols">
 <t>
-Remote access to configuration programs and computational results
-will need to be authenticated and authorized in some fashion.
+Remote access to configuration and computational results
+must be authenticated and authorized.
 The ONC RPC protocol itself
 <xref target="RFC5531"/>
-has authentication mechanisms, including mechanisms that use strong cryptography
+has such authentication mechanisms,
+including mechanisms that use cryptography
 <xref target="RFC7861"/>.
 </t>
 <t>
-There will need to be a mechanism for authorizing offload agents
+There must be a mechanism for authorizing offload agents
 to access file data on behalf of authenticated users.
 </t>
 <t>
 A trust relationship must exist between clients and servers.
 For example, how would clients be certain that the server has actually
 encrypted a file's content?
+</t>
+<t>
+NFS servers must schedule the use of Computational Storage Services
+fairly to prevent denial-of-service.
 </t>
 </list>
 </t>
@@ -258,35 +293,57 @@ This document has no IANA actions.
 
 <references title="Normative References">
 <?rfc include="reference.RFC.1833.xml"?>
-<?rfc include="reference.RFC.2119.xml"?>
 <?rfc include="reference.RFC.5531.xml"?>
 <?rfc include="reference.RFC.7532.xml"?>
-<?rfc include="reference.RFC.8174.xml"?>
 </references>
 
 <references title="Informative References">
+
+<reference
+ anchor="TORA">
+<front>
+<title>
+Computational storage: an efficient and scalable platform for big data and HPC applications
+</title>
+<author initials="M.T." surname="Torabzadehkashi" fullname="Mahdi Torabzadehkashi"></author>
+<author initials="S.R." surname="Rezaei" fullname="Siavash Rezaei"></author>
+<author initials="A.H." surname="HeydariGorji" fullname="Ali HeydariGorji"></author>
+<author initials="H.B." surname="Bobarshad" fullname="Hosein Bobarshad"></author>
+<author initials="V.A." surname="Alves" fullname="Vladimir Alves"></author>
+<author initials="N.B." surname="Bagherzadeh" fullname="Nader Bagherzadeh"></author>
+<date day="15" month="November" year="2019"/>
+</front>
+<seriesInfo name="Journal of Big Data" value="6, 100"/>
+<seriesInfo name="DOI" value="10.1186/s40537-019-0265-5"/>
+</reference>
+
 <?rfc include="reference.RFC.7861.xml"?>
 <?rfc include="reference.RFC.7862.xml"?>
 </references>
 
 <section
- title="Acknowledgments"
- anchor="section:F3D386B1-76E1-43E4-A0C5-956D769E21DB"
- numbered="no">
+ anchor="section:f3d386b1-76e1-43e4-a0c5-956d769e21db"
+ numbered="no"
+ title="Acknowledgments">
 <t>
 The author is grateful to
 Bill Baker,
 Greg Marsden,
 and
 Jim Williams of Oracle,
+Glenn Watkins of HPE,
 and
-Glenn Watkins of HPE
+Stephen Bates of Eideticom
 for their input and support of this work.
 </t>
 <t>
 Special thanks go to
 Transport Area Director Magnus Westerlund,
-NFSV4 Working Group Chairs Spencer Shepler and Brian Pawlowski,
+NFSV4 Working Group Chairs
+David Noveck,
+Brian Pawlowski,
+and
+Spencer Shepler,
 and
 NFSV4 Working Group Secretary Thomas Haynes
 for their support.
