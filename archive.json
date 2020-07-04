@@ -1,0 +1,94 @@
+{
+  "magic": "E!vIA5L86J2I",
+  "timestamp": "2020-07-04T17:34:39.912235+00:00",
+  "repo": "chucklever/i-d-comp-stor-reqs",
+  "labels": [
+    {
+      "name": "bug",
+      "description": "Something isn't working",
+      "color": "d73a4a"
+    },
+    {
+      "name": "duplicate",
+      "description": "This issue or pull request already exists",
+      "color": "cfd3d7"
+    },
+    {
+      "name": "enhancement",
+      "description": "New feature or request",
+      "color": "a2eeef"
+    },
+    {
+      "name": "help wanted",
+      "description": "Extra attention is needed",
+      "color": "008672"
+    },
+    {
+      "name": "good first issue",
+      "description": "Good for newcomers",
+      "color": "7057ff"
+    },
+    {
+      "name": "invalid",
+      "description": "This doesn't seem right",
+      "color": "e4e669"
+    },
+    {
+      "name": "question",
+      "description": "Further information is requested",
+      "color": "d876e3"
+    },
+    {
+      "name": "wontfix",
+      "description": "This will not be worked on",
+      "color": "ffffff"
+    }
+  ],
+  "issues": [
+    {
+      "number": 1,
+      "id": "MDU6SXNzdWU0OTM1MDU4MzA=",
+      "title": "Review comments from Dave Noveck",
+      "url": "https://github.com/chucklever/i-d-comp-stor-reqs/issues/1",
+      "state": "CLOSED",
+      "author": "chucklever",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "Regarding the last paragraph of the introduction, I think you have to clarify what you mean by \"opportunistic\" and recognize that \"opportunistic\" as used in the phrase \"opportunistic TLS\" and in RFC 7435 are really homonyms.   I'm going to suggest something like the following two paragraphs as a possible replacement:\r\n\r\nThis document specifies the use of RPC on a TLS-protected transport in a fashion that is transparent to upper layer protocols based on RPC. It is specfied to use opportunistic TLS, enabling use of RPC-on-TLS to be deployed in environments with implentations that do not support it.  Specifications for RPC-based upper layer protocols are free to require stricter policies to guarantee that TLS is used for each connection.\r\n\r\nClient authentication is provided for using the opportnitunstic approach specified in [RFC7435], allowing encryption to be used even when authenitication is not. However, specifications  for RPC-based upper layer protocols are free to require stricter policies to guarantee the client is always authenticated or always authenticated when certain secrity flavors (e.g. AUTH_SYS) are used.\r\n\r\nIn section 4.1, I'm not clear about the relevance of the last sentence of the first paragraph.  While the tatement is true, it doesn't appear relevant to the matter being discussed.\r\n\r\nWith regard to the two deployment modes, I suggest that what they share (a server cerificate) should be made clearer by pulling thi assumption into the second paragraph.   Also I'm concened about overuse of the term \"SHOULD\".   In some cases (e.g. the \"SHOULD\" now in the second paragraph) I have no idea what circumstance might justify not doing rhe recommended action, while in other cases it appear that the i just describing the way the protocol works and that \"SHOULD\" might suggest a choice where there really isn't one, leading to a large set of deplyment modes, rather than just two.  So here is possible replacement text to consider.   \r\n\r\nIn all cases a server is to posess a unique global identity (e.g., a certificate that is signed by a well-known trust anchor) . The RPC server MUST request a TLS peer identity from each client upon first contact.  The availabilit of such client identities and how the absence of such identities are dealt with permits two deployment modes:\r\n\r\nServer-only Host Authentication\r\n\r\nIn this case, clients are anonymous (i.e., present no identifier or any identifier presented ). In this situation, the client will authenticate the server host using the presented TLS identity, but the server cannot authenticate clients.\r\nMutual Host Authentication\r\n\r\nIn this type of deployment, all clients are to possess unique identities (e.g., certificates). As part of the TLS handshake, both peers authenticate using the presented TLS identities. If authentication of either peer fails, or if authorization based on those identities blocks access to the server, the client association is to be rejected.\r\nIn the second sentence of the first paragraph of section 4.2.1, suggest replacing \"disabled\" by \"avoided\".\r\n\r\nI'm concrerned abou the use of the term \"RECOMMENDED\" in the first bullet in secttion 7.1.1.  I think thisshould be changed to \"recommended\".   With \"RECOMMENDED\", the natural interpretation is that you SHOULD do A but MUST do B if you don't.   However, you don't have to do any of it since that would invalidate the opportunistic nature of the whole thing. \r\n\r\nSection 7.2 really confuses me.   First of all it isn't made very clear what \"multiple distinct security realms\" means although it is natural to assume that they correspond to the multiiple \"identity domains\" mentioned in the second paragraph.\r\n\r\nif that's the case., I don't see how use of the same tls session by the client would compormise the \"privacty of RPC users\"  if the requestring user are x@a.org and y@b.rg any more than they would be compromised by use by users x@a.org and y@a.org (i.e. not at all).   i suspect that this comes from the security directorate.  If so, it makes sense to ask them to clarify exactly what they want and why.\r\n\r\nI'd like to suggest the following as a possible replacement for the third paragraph of section 7.3:\r\n\r\nIn light of the above, it is RECOMMENDED that AUTH_SYS is to be used, RPC clients present authentication material necessary for RPC servers they contact to have a degree of trust that the clients are acting responsibly.  \r\n\r\nIn the second sentence of the last paragraph of suggest adding \"in addition,\" at the start of the sentence.\r\n\r\nSuggest replacing the last (unnumbered) paragraph of Appendix A by the following:\r\n\r\nIn light of the avbove, it should be clear that AUTH_SYS therefore by itself offers little to no communication security:  \r\n\r\nIn item 2, suggest replacing \"real\" by \"actual\".\r\n\r\nFInally, I'd like to to suggest the following as a replacement for section 5.1,3:\r\n\r\n5.1.3. Potential Operation on other Transports\r\nThe RPC-over-RDMA transport can make use of Transport Layer Security below the RDMA transport layer [RFC8166]. The exact mechanism is not within the scope of this document.   Because there might not provisions made to exchange client and server certificates, authentication material might be provide by facilites with the RPC-over-RDMA transport [TBD].\r\n\r\nTransports that provide tls-level security [e.g.  QUIC] would need to be accommodated, even though, in such cases, use of TLS is not opportunitic as it is in the cases in which TCP or UDP is used. ",
+      "createdAt": "2019-09-13T20:33:17Z",
+      "updatedAt": "2019-09-22T15:31:15Z",
+      "closedAt": "2019-09-22T15:31:14Z",
+      "comments": [
+        {
+          "author": "chucklever",
+          "authorAssociation": "OWNER",
+          "body": "Pasted to the wrong project.",
+          "createdAt": "2019-09-22T15:31:14Z",
+          "updatedAt": "2019-09-22T15:31:14Z"
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "id": "MDU6SXNzdWU1Mzk4Mzg1NTY=",
+      "title": "NFS-based comp-stor needs to allow loading new functionality",
+      "url": "https://github.com/chucklever/i-d-comp-stor-reqs/issues/2",
+      "state": "OPEN",
+      "author": "chucklever",
+      "authorAssociation": "OWNER",
+      "assignees": [
+        "chucklever"
+      ],
+      "labels": [
+        "enhancement"
+      ],
+      "body": "Device-based computational storage has a mechanism for loading new computational functionality into CSDs (Programmable Computational Storage Device). The document does not describe a mechanism for similar functionality on an NFS server.\r\n\r\nThe NFS server's computation engine may need to process data spanning multiple NFS servers.",
+      "createdAt": "2019-12-18T18:13:16Z",
+      "updatedAt": "2019-12-18T18:13:16Z",
+      "closedAt": null,
+      "comments": []
+    }
+  ],
+  "pulls": []
+}
